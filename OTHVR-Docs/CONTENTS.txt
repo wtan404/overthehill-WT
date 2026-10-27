@@ -1,0 +1,20 @@
+Over the Hill VR v1.6 - full Windows x64 release
+
+Includes the installed 0.3.2 VR core with wheel scrolling hotfix and universal
+cockpit eligibility, the 0.4.16
+cockpit/controller companion, all installed mod asset files, Touch bindings,
+OpenVR, the working mod settings, and MelonLoader 0.7.3 with its dependencies.
+The dashboard images/font and GPS geometry are embedded in the companion DLL.
+The GPS reads the installed game map at runtime; no game map asset is bundled.
+
+Disabled FPP/TrailWheel placeholder mods, test helpers, logs, screenshots,
+saves, game binaries, and generated game/Unity reference caches are excluded.
+MelonLoader builds the required game interop on first launch.
+
+Install instructions and controls: README.txt or README.md.
+External requirements: your Windows Steam game, PC-connected headset,
+SteamVR, .NET 6 x64, and G HUB for a Logitech wheel.
+
+The same full-release ZIP can be uploaded to GitHub Releases or Nexus Mods.
+Manual installation into the game root is documented; no Vortex installer
+or mod-manager deployment has been tested.
