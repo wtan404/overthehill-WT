@@ -50,6 +50,14 @@ Tested with the Logitech G29. Leave G HUB running, set its operating range to 90
 - Options: pause. Plus: recenter. Minus: screenshot.
 - Red dial: seat up / down. Press the dial: HUD on / off. Hold PS for a second: VR on / off.
 
+### Fanatec CSL DD & Direct Drive
+
+Full support for Fanatec CSL DD, GT DD Pro, and ClubSport bases:
+- **Dual-Topology Support**: Automatically accommodates both single-connection setups (pedals, shifter, handbrake plugged into the CSL DD base via RJ12) and modular split setups (standalone USB pedals).
+- **Load Cell Brakes**: Automatically detects and handles Fanatec load cell brake pedals on axis `lZ` or `lRz`.
+- **Direct Drive Safety**: Softened startup calibration kick and Direct Drive torque scaling to prevent sudden 8 Nm wheel jerks.
+- **FanaLab / Driver Settings**: Set your wheel rotation to 900 degrees in Fanatec Control Panel / FanaLab, and disable Steam Input for the wheel in Steam.
+
 ## If something gets weird
 
 F8 toggles VR, F6 recenters, and F11 switches to the cockpit. Page Up / Down moves your seat up / down; Home / End moves it forward / back; Insert / Delete moves it sideways. F12 toggles the HUD.
