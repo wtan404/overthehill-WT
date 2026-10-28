@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.6.2-dev] - 2026-10-28
+### Added
+- **Step-by-Step Installation & Setup Guide (`INSTALL_GUIDE.md`)**:
+  - Comprehensive guide covering end-to-end setup for Over the Hill VR with MelonLoader 0.7.3.
+  - Non-destructive archival and backup protocol preventing accidental overwrite of existing or original game files (`version.dll`, `MelonLoader/`, `Mods/`, `UserData/`).
+  - Clear rollback and uninstallation procedures for instant reversion to pure vanilla state.
+  - Dedicated hardware configuration sections for Fanatec CSL DD (Topology A daisy-chain and Topology B split USB), Logitech G29, Meta Quest Touch controllers, and standard gamepads.
+  - Steam launch parameters (`-force-d3d11`) and in-game calibration/hotkey reference (`F6`, `F8`, `F11`, `F12`, seat adjustments).
+- **Documentation Linkage**: Linked `INSTALL_GUIDE.md` in `README.md`.
+
 ## [1.6.1-dev] - 2026-10-27
 ### Added
 - **Fanatec CSL DD & Direct Drive Wheel Base Support**:

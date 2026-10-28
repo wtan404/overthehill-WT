@@ -6,6 +6,8 @@ This is the full mod, with MelonLoader 0.7.3, the cockpit, mirrors, dashboard, c
 
 ## Install
 
+> For detailed step-by-step setup, hardware configuration (Fanatec / Logitech / Quest), and non-destructive file archival instructions, see the complete [Installation & Setup Guide](INSTALL_GUIDE.md).
+
 1. Close the game. If you already have mods, back up your `Mods`, `MelonLoader`, and `UserData` folders and `version.dll` first.
 2. Install SteamVR and the [.NET 6 Desktop Runtime, Windows x64](https://dotnet.microsoft.com/en-us/download/dotnet/6.0). For a G29, install Logitech G HUB too.
 3. In Steam, right-click Over the Hill > Manage > Browse local files. Extract everything from this ZIP right there, beside `over the hill.exe`. Merge folders and replace files. Don't put it inside another folder.
