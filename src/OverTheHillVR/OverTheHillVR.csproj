@@ -3,18 +3,12 @@
     <AssemblyName>OverTheHillVR</AssemblyName>
     <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
     <TargetFramework>net6.0</TargetFramework>
-  </PropertyGroup>
-  <PropertyGroup>
     <LangVersion>latest</LangVersion>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
+    <AssemblySearchPaths>$(AssemblySearchPaths);..\..\MelonLoader\Il2CppAssemblies;..\..\MelonLoader\net6</AssemblySearchPaths>
   </PropertyGroup>
-  <PropertyGroup />
-  <ItemGroup />
   <ItemGroup>
-    <Reference Include="System.Private.CoreLib">
-      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.31\System.Private.CoreLib.dll</HintPath>
-    </Reference>
     <Reference Include="MelonLoader">
       <HintPath>..\..\MelonLoader\net6\MelonLoader.dll</HintPath>
     </Reference>

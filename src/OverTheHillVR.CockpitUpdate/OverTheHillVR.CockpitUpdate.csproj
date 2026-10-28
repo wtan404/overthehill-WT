@@ -4,14 +4,10 @@
     <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
     <TargetFramework>net6.0</TargetFramework>
     <PlatformTarget>x64</PlatformTarget>
-  </PropertyGroup>
-  <PropertyGroup>
     <LangVersion>latest</LangVersion>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
-  </PropertyGroup>
-  <PropertyGroup>
-    <RootNamespace />
+    <AssemblySearchPaths>$(AssemblySearchPaths);..\..\MelonLoader\Il2CppAssemblies;..\..\MelonLoader\net6</AssemblySearchPaths>
   </PropertyGroup>
   <ItemGroup>
     <None Remove="OTH.Instruments.Font" />
@@ -23,7 +19,7 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Private.CoreLib">
-      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.31\System.Private.CoreLib.dll</HintPath>
+      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\6.0.36\System.Private.CoreLib.dll</HintPath>
     </Reference>
     <Reference Include="MelonLoader">
       <HintPath>..\..\MelonLoader\net6\MelonLoader.dll</HintPath>
@@ -34,7 +30,9 @@
     </Reference>
     <Reference Include="Assembly-CSharp" />
     <Reference Include="Il2CppDistantLands.Cozy.Runtime" />
-    <Reference Include="Il2Cppmscorlib" />
+    <Reference Include="Il2Cppmscorlib">
+      <Aliases>il2cppmscorlib</Aliases>
+    </Reference>
     <Reference Include="Unity.ResourceManager" />
     <Reference Include="0Harmony">
       <HintPath>..\..\MelonLoader\net6\0Harmony.dll</HintPath>
@@ -49,15 +47,9 @@
     <Reference Include="UnityEngine.PhysicsModule" />
     <Reference Include="UnityDirectInput.Runtime" />
     <Reference Include="Unity.RenderPipelines.Universal.Runtime" />
-    <Reference Include="System.Linq">
-      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.31\System.Linq.dll</HintPath>
-    </Reference>
     <Reference Include="Unity.Addressables" />
     <Reference Include="Il2CppFunselektor.FunCore.Runtime" />
     <Reference Include="Unity.TextMeshPro" />
-    <Reference Include="System.Text.RegularExpressions">
-      <HintPath>C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.31\System.Text.RegularExpressions.dll</HintPath>
-    </Reference>
     <Reference Include="UnityEngine.ImageConversionModule" />
   </ItemGroup>
 </Project>

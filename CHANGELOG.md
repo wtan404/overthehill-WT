@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.1-dev] - 2026-10-28
+### Fixed
+- **Unity 6 Driving Gatekeeper & Fanatec Wheel Inactivity**:
+  - Fixed `CockpitUpdate.IsDriving` which previously evaluated to `false` due to Unity 6's disabled `playerInputActions.Driving` state when using DirectInput wheel peripherals.
+  - Now correctly resolves driving state via `GameInput.IsMapActive((Map)0) && OwnsVehicle` and automatically activates the `Driving` action map.
+  - Fixed `WheelInputFix.Prepare` which was forcing steering, throttle, and brake inputs to zero whenever `IsDriving` returned `false`.
+  - Fixed paddle gear shifting (`RequestGear`) which was previously dropping left/right paddle gear requests while in Neutral.
+- **Direct Drive FFB Test-Kick Bypass**:
+  - Automatically initialized standard DirectInput constant force direction (`ffbDir = 1`) upon FFB connection, bypassing the inconclusive 8-second auto-direction test loop on Fanatec high-torque direct drive wheel bases.
+- **Binary Deployment**:
+  - Rebuilt and deployed patched `OverTheHillVR.dll` and `OverTheHillVR.CockpitUpdate.dll` directly to the active Steam installation directory.
+
 ## [1.7.0-dev] - 2026-10-28
 ### Added
 - **Dual-Backend VR Architecture (`IVrBackend`)**:

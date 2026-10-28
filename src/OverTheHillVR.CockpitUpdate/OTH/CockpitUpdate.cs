@@ -104,7 +104,15 @@ public class CockpitUpdate : MelonMod
 				{
 					return false;
 				}
-				return GameInput.IsMapActive((Map)0) && instance.playerInputActions.Driving.enabled;
+				if (GameInput.IsMapActive((Map)0))
+				{
+					if (instance.playerInputActions != null && !instance.playerInputActions.Driving.enabled)
+					{
+						try { instance.playerInputActions.Driving.Enable(); } catch {}
+					}
+					return true;
+				}
+				return false;
 			}
 			catch
 			{

@@ -4542,6 +4542,12 @@ internal class VrDriver
 			wheelDev = val;
 			wheelAttachedAt = Time.unscaledTime;
 			wheelGotData = false;
+			string devName = (val.productName + " " + val.instanceName).ToLowerInvariant();
+			if (devName.Contains("fanatec") || devName.Contains("csl") || devName.Contains("clubsport") || devName.Contains("podium"))
+			{
+				ffbDir = 1;
+				L.Msg("FFB: Fanatec Direct Drive profile active (direction normal, calibration kick loop bypassed).");
+			}
 			L.Msg($"Wheel: using '{val.productName}' (attached {value}, active {value2}).");
 			return true;
 		}
@@ -4727,8 +4733,8 @@ internal class VrDriver
 			}
 		}
 		float num2 = Mathf.Clamp(((float)(int)deviceState.lX - 32767.5f) / 32767.5f * Mod.WheelSteerGain.Value, -1f, 1f);
-		float num3 = Pedal(0, deviceState.lY);
-		float num4 = Pedal(1, deviceState.lRz);
+		float num3 = Pedal(0, GetPedalAxis(0, deviceState));
+		float num4 = Pedal(1, GetPedalAxis(1, deviceState));
 		if (Mathf.Abs(num2 - sentLS.x) > 0.01f || num3 > 0.05f || num4 > 0.05f || WheelPad.AnyDown())
 		{
 			wheelLastUse = Time.unscaledTime;

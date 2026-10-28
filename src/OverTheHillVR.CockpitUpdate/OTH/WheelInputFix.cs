@@ -76,7 +76,9 @@ internal static class WheelInputFix
 		{
 			return;
 		}
-		if (!CockpitUpdate.IsDriving || !NetworkBool.op_Implicit(CockpitUpdate.NativeInput.inputIsEnabled))
+		FunselektorFusionVPStandardInput nativeInput = CockpitUpdate.NativeInput;
+		bool inputEnabled = nativeInput != null && NetworkBool.op_Implicit(nativeInput.inputIsEnabled);
+		if (!CockpitUpdate.IsDriving || !inputEnabled)
 		{
 			stick = Vector2.zero;
 			gas = (brake = 0f);
