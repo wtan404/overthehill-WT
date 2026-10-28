@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.0-dev] - 2026-10-28
+### Added
+- **Dual-Backend VR Architecture (`IVrBackend`)**:
+  - Implemented `IVrBackend` abstraction interface for hot-switching between OpenVR (SteamVR) and native OpenXR.
+  - Implemented `OpenVrBackend` encapsulating Valve OpenVR (`openvr_api.dll`) with 100% legacy SteamVR preservation.
+  - Implemented `OpenXrBackend` for direct hardware execution on Meta Quest Link and Virtual Desktop VDXR, bypassing SteamVR entirely.
+  - Added native OpenXR 1.0 C# P/Invoke bindings (`OpenXR.cs`, `OpenXrEnums.cs`, `OpenXrStructs.cs`) targeting `openxr_loader.dll`.
+  - Added official Khronos x64 `openxr_loader.dll` under `Mods/OverTheHillVR/`.
+  - Added `VrRuntime = "Auto"` setting in `UserData/MelonPreferences.cfg` with options `"Auto"`, `"OpenXR"`, and `"SteamVR"`.
+- **Branch & Release Infrastructure**:
+  - Pushed stable release baseline to `origin/main` as repository default branch.
+  - Created and published `openxr-support` feature branch.
+
 ## [1.6.3-dev] - 2026-10-28
 ### Infrastructure & Version Control
 - **GitHub Remote Repository Provisioned**:

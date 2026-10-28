@@ -17,6 +17,8 @@ public class Mod : MelonMod
 
 	internal static MelonPreferences_Entry<bool> StartInVR;
 
+	internal static MelonPreferences_Entry<string> VrRuntime;
+
 	internal static MelonPreferences_Entry<float> ResolutionScale;
 
 	internal static MelonPreferences_Entry<bool> FlipEyeY;
@@ -241,6 +243,7 @@ public class Mod : MelonMod
 		ModDir = Path.GetDirectoryName(typeof(Mod).Assembly.Location);
 		MelonPreferences_Category melonPreferences_Category = MelonPreferences.CreateCategory("OverTheHillVR", "Over The Hill VR");
 		StartInVR = melonPreferences_Category.CreateEntry("StartInVR", default_value: true, null, "Start VR automatically. F8 toggles VR any time.");
+		VrRuntime = melonPreferences_Category.CreateEntry("VrRuntime", "Auto", null, "VR Runtime Backend: Auto (prefers OpenXR, falls back to SteamVR), OpenXR, or SteamVR.");
 		ResolutionScale = melonPreferences_Category.CreateEntry("EyeResolution", 0.65f, null, "Fraction of SteamVR recommended per-eye resolution (0.3 to 1.5). Lower = faster.");
 		FlipEyeY = melonPreferences_Category.CreateEntry("FlipEyeY", default_value: true, null, "Flip eye images vertically. F7 toggles if the headset image is upside down.");
 		MirrorToDesktop = melonPreferences_Category.CreateEntry("MirrorToDesktop", default_value: false, null, "Keep rendering the normal game view on the monitor while driving in VR (costs performance).");
