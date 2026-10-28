@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.6.3-dev] - 2026-10-28
+### Infrastructure & Version Control
+- **GitHub Remote Repository Provisioned**:
+  - Created remote repository [`wtan404/overthehill-WT`](https://github.com/wtan404/overthehill-WT).
+  - Linked `origin` remote to `https://github.com/wtan404/overthehill-WT.git`.
+  - Configured Git HTTP post buffer (`http.postBuffer = 524288000`) for large binary payloads (`version.dll` and runtime assemblies).
+  - Pushed and established upstream tracking for the active `dev` branch.
+
 ## [1.6.2-dev] - 2026-10-28
 ### Added
 - **Step-by-Step Installation & Setup Guide (`INSTALL_GUIDE.md`)**:
