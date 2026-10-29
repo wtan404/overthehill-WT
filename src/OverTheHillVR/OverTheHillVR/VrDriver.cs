@@ -546,6 +546,10 @@ internal class VrDriver
 
 	private float ffbTestNext;
 
+	private bool isDirectDrive;
+
+	private float ffbLastTick;
+
 	private DeviceInfo wheelDev;
 
 	private bool wheelTried;
@@ -2568,6 +2572,7 @@ internal class VrDriver
 
 	internal void Update()
 	{
+		WatchdogCheck();
 		try
 		{
 			Keys.Poll();
@@ -2785,6 +2790,7 @@ internal class VrDriver
 		{
 			StopVr();
 		}
+		FfbStop();
 	}
 
 	private void Recenter()
@@ -4194,6 +4200,7 @@ internal class VrDriver
 
 	private void FfbTick()
 	{
+		ffbLastTick = Time.unscaledTime;
 		//IL_0132: Unknown result type (might be due to invalid IL or missing references)
 		//IL_0137: Unknown result type (might be due to invalid IL or missing references)
 		//IL_013c: Unknown result type (might be due to invalid IL or missing references)
@@ -4346,7 +4353,9 @@ internal class VrDriver
 		float num19 = 1f - Mathf.Exp(-25f * Time.unscaledDeltaTime);
 		ffbConst += (num - ffbConst) * num19;
 		int num20 = Mathf.RoundToInt(Mathf.Clamp(ffbConst * Mod.FfbStrength.Value, 0f - Mod.FfbMaxForce.Value, Mod.FfbMaxForce.Value) * 10000f) * ((!Mod.FfbInvert.Value) ? 1 : (-1)) * ((ffbDir >= 0) ? 1 : (-1));
+		num20 = SafeFfb(num20, ffbLastConst, Time.unscaledDeltaTime, flag, GameFocused(), isDirectDrive);
 		int num21 = Mathf.RoundToInt(Mathf.Clamp01(num2 * Mod.FfbStrength.Value) * 10000f);
+		num21 = SafeDamper(num21, isDirectDrive, flag);
 		int num22 = Mathf.RoundToInt(Mathf.Clamp01(value * Mod.FfbStrength.Value) * 10000f);
 		try
 		{
@@ -4435,6 +4444,46 @@ internal class VrDriver
 		catch (Exception ex)
 		{
 			L.Warning("FFB connect: " + ex.Message);
+		}
+	}
+
+
+	private static int SafeFfb(int targetConst, int lastConst, float dt, bool driving, bool focused, bool isDD)
+	{
+		if (!driving || !focused) return 0;
+		if (isDD) targetConst = (int)(targetConst * 0.65f);
+		int baseline = (lastConst == 99999) ? 0 : lastConst;
+		float maxDeltaF = 12000f * dt;
+		if (maxDeltaF < 50f) maxDeltaF = 50f;
+		int maxDelta = (int)maxDeltaF;
+		int delta = targetConst - baseline;
+		if (delta > maxDelta) targetConst = baseline + maxDelta;
+		else if (delta < -maxDelta) targetConst = baseline - maxDelta;
+		if (targetConst > 8500) targetConst = 8500;
+		if (targetConst < -8500) targetConst = -8500;
+		return targetConst;
+	}
+
+	private static int SafeDamper(int targetDamper, bool isDD, bool driving)
+	{
+		if (!driving) return 0;
+		if (isDD && targetDamper < 1200) targetDamper = 1200;
+		if (targetDamper > 10000) targetDamper = 10000;
+		return targetDamper;
+	}
+
+	private void WatchdogCheck()
+	{
+		if (ffbReady && ffbDev != null)
+		{
+			if (Time.unscaledTime - ffbLastTick > 0.20f)
+			{
+				if (ffbLastConst != 0)
+				{
+					DIManager.UpdateConstantForceSimple(ffbDev, 0);
+					ffbLastConst = 0;
+				}
+			}
 		}
 	}
 
@@ -4546,7 +4595,8 @@ internal class VrDriver
 			if (devName.Contains("fanatec") || devName.Contains("csl") || devName.Contains("clubsport") || devName.Contains("podium"))
 			{
 				ffbDir = 1;
-				L.Msg("FFB: Fanatec Direct Drive profile active (direction normal, calibration kick loop bypassed).");
+				isDirectDrive = true;
+				L.Msg("FFB: Fanatec Direct Drive profile active (direction normal, calibration kick loop bypassed, hardware safeties engaged).");
 			}
 			L.Msg($"Wheel: using '{val.productName}' (attached {value}, active {value2}).");
 			return true;

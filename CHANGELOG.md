@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.2-dev] - 2026-10-28
+### Added
+- **Direct Drive Wheelbase Hardware Safeties & Watchdog Protection**:
+  - **Asynchronous Watchdog Heartbeat**: Injected `WatchdogCheck()` into the primary game update loop (`VrDriver.Update`). If the physics loop freezes, crashes, or drops frames for more than 200ms (`unscaledTime - ffbLastTick > 0.20s`), constant force is instantly zeroed (`DIManager.UpdateConstantForceSimple(ffbDev, 0)`) to prevent open-loop torque latching.
+  - **Application Focus & Menu Auto-Zeroing**: Integrated foreground focus validation (`GameFocused()`) and vehicle active state (`flag`). If the player pauses, enters a menu, alt-tabs, or opens a VR dashboard overlay, FFB torque is immediately disengaged.
+  - **Torque Jerk & Slew Rate Limiter (`SafeFfb`)**: Implemented dynamic frame-delta slew rate clamping limited to 12,000 units/second (`maxDelta = max(50, 12000 * dt)`). Prevents sudden high-torque impulse spikes from physics collisions or wheel glitches from whipping the rim violently.
+  - **Direct Drive Dynamic Torque Scaling & Ceiling Clamp**: Implemented auto-scaling (0.65x multiplier) for detected Direct Drive wheelbases, capped strictly at `[-8500, +8500]` (85% hardware saturation ceiling) to protect motor coils and user wrists during testing.
+  - **Anti-Oscillation Damping Floor (`SafeDamper`)**: Injected dynamic damping protection for Direct Drive bases with a 12% minimum damper floor (`targetDamper >= 1200`) while driving. Prevents violent hands-off high-speed resonance oscillation ("death wobble") on straightaways.
+  - **Teardown & Crash Safety**: Patched `VrDriver.Quit()` to ensure `FfbStop()` is unconditionally called upon game exit, and patched error handling to disengage torque if FFB errors exceed thresholds.
+- **Reproducible Safety Patch Script**: Added `scripts/patch_safeties.ps1` to version control for deterministic IL patching and verification of Direct Drive hardware safety systems.
 ## [1.7.1-dev] - 2026-10-28
 ### Fixed
 - **Unity 6 Driving Gatekeeper & Fanatec Wheel Inactivity**:
