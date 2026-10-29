@@ -31,5 +31,8 @@
       <HintPath>..\..\MelonLoader\net6\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
     </Reference>
     <Reference Include="Il2CppGPUInstancerPro.Core" />
+    <Reference Include="SimHubTelemetry">
+      <HintPath>..\SimHubTelemetry\bin\Release\net6.0\SimHubTelemetry.dll</HintPath>
+    </Reference>
   </ItemGroup>
 </Project>

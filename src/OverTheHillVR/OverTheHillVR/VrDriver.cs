@@ -2579,6 +2579,7 @@ internal class VrDriver
 	internal void Update()
 	{
 		WatchdogCheck();
+		TelemetryTick();
 		try
 		{
 			Keys.Poll();
@@ -2797,6 +2798,7 @@ internal class VrDriver
 			StopVr();
 		}
 		FfbStop();
+		OverTheHillVR.Telemetry.TelemetryBroadcaster.Shutdown();
 	}
 
 	private void Recenter()
@@ -4498,6 +4500,38 @@ internal class VrDriver
 		return targetDamper;
 	}
 
+
+	private void TelemetryTick()
+	{
+		bool isDriving = (UnityEngine.Object)(object)body != (UnityEngine.Object)null &&
+		                 (UnityEngine.Object)(object)bodyRb != (UnityEngine.Object)null &&
+		                 (UnityEngine.Object)(object)carStatus != (UnityEngine.Object)null &&
+		                 Time.timeScale > 0.01f;
+
+		float rpm = 0f;
+		float speed = 0f;
+		int gear = 0;
+		if (isDriving)
+		{
+			rpm = (float)carStatus.EngineRpm;
+			speed = carStatus.VehicleSpeed;
+			gear = (int)carStatus.GearboxGear;
+		}
+
+		float steer = CarSteer();
+		float accelY = 0f;
+
+		OverTheHillVR.Telemetry.TelemetryBroadcaster.TickSimple(
+			isDriving,
+			Time.unscaledTime,
+			rpm,
+			speed,
+			gear,
+			accelY,
+			ffbHit,
+			steer
+		);
+	}
 	private void WatchdogCheck()
 	{
 		if (ffbReady && ffbDev != null)

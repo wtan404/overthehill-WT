@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.4-dev] - 2026-10-28
+### Added
+- **SimHub ShakeIt Bass Shakers & Tactile Telemetry UDP Broadcaster**:
+  - Implemented real-time UDP telemetry streaming adhering to the **Forza Motorsport / Horizon (Dash protocol, 324-byte payload)** broadcast standard targeting `127.0.0.1:5606` at 60 Hz.
+  - Automatically interfaces with SimHub's native Forza Horizon / Motorsport game profile with zero manual scripting required.
+  - Channels hooked directly from engine physics into tactile effects:
+    - **Engine Vibration**: Live RPM harmonics (`carStatus.EngineRpm`).
+    - **Gear Shift Thump**: Instantaneous tactile impulse triggered on paddle upshift/downshift (`carStatus.GearboxGear`).
+    - **Road Bumps & Surface Rumble**: Vertical frame-delta acceleration (`accelY`) and suspension ride height state.
+    - **Road Speed / Wind**: Scaled vehicle ground velocity (`carStatus.VehicleSpeed`).
+    - **Impacts & Collisions**: Shock impulse pulses (`ffbHit`).
+    - **Steering Dynamics**: Real-time steering input angle (`CarSteer()`).
+  - Added sleep / mute safeguards: automatically sends a single zeroed packet to silence transducers when the vehicle is paused, exited, or parked, preventing persistent low-frequency idling rumble in menus.
+  - Added dedicated configuration settings in `UserData/MelonPreferences.cfg` under `[SimHubTelemetry]`.
+- **CLR JIT Verifier Optimization (`SafeFfb`)**:
+  - Resolved an evaluation stack discrepancy in `VrDriver.SafeFfb` where an extra evaluation load was emitted before checking the Direct Drive clamp bounds, guaranteeing 100% clean JIT verification across all patched methods.
+
 ## [1.7.3-dev] - 2026-10-28
 ### Fixed
 - **Direct Drive Force Feedback Activation & Evaluation Stack Resolution**:

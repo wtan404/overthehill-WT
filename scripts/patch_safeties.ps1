@@ -2,6 +2,7 @@ Add-Type -Path "D:\Projects\overthehillvr-fan\MelonLoader\net6\Mono.Cecil.dll"
 Add-Type -Path "D:\Projects\overthehillvr-fan\MelonLoader\net6\Mono.Cecil.Rocks.dll"
 
 $dllPath = "D:\Projects\overthehillvr-fan\Mods\OverTheHillVR.dll"
+$telemPath = "D:\Projects\overthehillvr-fan\Mods\SimHubTelemetry.dll"
 
 # Always restore clean base from git commit b76920b to ensure pristine IL
 Write-Output "Restoring clean base OverTheHillVR.dll from commit b76920b..."
@@ -14,7 +15,7 @@ $mod = $asm.MainModule
 $driverType = $mod.GetType("OverTheHillVR.VrDriver")
 $vmathType = $mod.GetType("OverTheHillVR.VMath")
 
-Write-Output "Patching OverTheHillVR.VrDriver for Fanatec Direct Drive safeties and Guardian recenter..."
+Write-Output "Patching OverTheHillVR.VrDriver for Fanatec Direct Drive safeties, Guardian recenter, and SimHub telemetry..."
 
 # 1. Add fields: isDirectDrive (bool), ffbLastTick (float), prevRawPos (Vector3), prevRawYaw (float), prevRawValid (bool)
 $f_isDD = New-Object Mono.Cecil.FieldDefinition("isDirectDrive", [Mono.Cecil.FieldAttributes]::Private, $mod.TypeSystem.Boolean)
@@ -56,7 +57,7 @@ $lbl_notInit = $il.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_1)
 $lbl_storeBase = $il.Create([Mono.Cecil.Cil.OpCodes]::Stloc_0)
 $lbl_skipMin = $il.Create([Mono.Cecil.Cil.OpCodes]::Conv_I4)
 $lbl_checkNeg = $il.Create([Mono.Cecil.Cil.OpCodes]::Ldloc_2)
-$lbl_clampBounds = $il.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0)
+$lbl_clampBounds = $il.Create([Mono.Cecil.Cil.OpCodes]::Ldarg, $m_safeFfb.Parameters[5])
 $lbl_checkMin = $il.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0)
 $lbl_retTarget = $il.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0)
 
@@ -98,13 +99,13 @@ $il.Emit([Mono.Cecil.Cil.OpCodes]::Ldc_R4, [float]50.0)
 $il.Append($lbl_skipMin)
 $il.Emit([Mono.Cecil.Cil.OpCodes]::Stloc_1)
 
-# Delta: targetConst - baseline
+# Delta = targetConst - baseline
 $il.Emit([Mono.Cecil.Cil.OpCodes]::Ldarg_0)
 $il.Emit([Mono.Cecil.Cil.OpCodes]::Ldloc_0)
 $il.Emit([Mono.Cecil.Cil.OpCodes]::Sub)
 $il.Emit([Mono.Cecil.Cil.OpCodes]::Stloc_2)
 
-# Slew limit clamp
+# If (delta > maxDelta) targetConst = baseline + maxDelta
 $il.Emit([Mono.Cecil.Cil.OpCodes]::Ldloc_2)
 $il.Emit([Mono.Cecil.Cil.OpCodes]::Ldloc_1)
 $il.Emit([Mono.Cecil.Cil.OpCodes]::Ble, $lbl_checkNeg)
@@ -114,6 +115,7 @@ $il.Emit([Mono.Cecil.Cil.OpCodes]::Add)
 $il.Emit([Mono.Cecil.Cil.OpCodes]::Starg, $m_safeFfb.Parameters[0])
 $il.Emit([Mono.Cecil.Cil.OpCodes]::Br, $lbl_clampBounds)
 
+# If (delta < -maxDelta) targetConst = baseline - maxDelta
 $il.Append($lbl_checkNeg)
 $il.Emit([Mono.Cecil.Cil.OpCodes]::Ldloc_1)
 $il.Emit([Mono.Cecil.Cil.OpCodes]::Neg)
@@ -123,18 +125,21 @@ $il.Emit([Mono.Cecil.Cil.OpCodes]::Ldloc_1)
 $il.Emit([Mono.Cecil.Cil.OpCodes]::Sub)
 $il.Emit([Mono.Cecil.Cil.OpCodes]::Starg, $m_safeFfb.Parameters[0])
 
-# Hardware boundary clamp [-8500, 8500]
+# Clamp [-8500, 8500] if isDD
 $il.Append($lbl_clampBounds)
+$il.Emit([Mono.Cecil.Cil.OpCodes]::Brfalse, $lbl_retTarget)
+
+$il.Emit([Mono.Cecil.Cil.OpCodes]::Ldarg_0)
 $il.Emit([Mono.Cecil.Cil.OpCodes]::Ldc_I4, [int]8500)
 $il.Emit([Mono.Cecil.Cil.OpCodes]::Ble, $lbl_checkMin)
 $il.Emit([Mono.Cecil.Cil.OpCodes]::Ldc_I4, [int]8500)
-$il.Emit([Mono.Cecil.Cil.OpCodes]::Starg, $m_safeFfb.Parameters[0])
+$il.Emit([Mono.Cecil.Cil.OpCodes]::Ret)
 
 $il.Append($lbl_checkMin)
 $il.Emit([Mono.Cecil.Cil.OpCodes]::Ldc_I4, [int]-8500)
 $il.Emit([Mono.Cecil.Cil.OpCodes]::Bge, $lbl_retTarget)
 $il.Emit([Mono.Cecil.Cil.OpCodes]::Ldc_I4, [int]-8500)
-$il.Emit([Mono.Cecil.Cil.OpCodes]::Starg, $m_safeFfb.Parameters[0])
+$il.Emit([Mono.Cecil.Cil.OpCodes]::Ret)
 
 $il.Append($lbl_retTarget)
 $il.Emit([Mono.Cecil.Cil.OpCodes]::Ret)
@@ -178,7 +183,7 @@ $ilD.Append($lbl_dampClampMax)
 $ilD.Emit([Mono.Cecil.Cil.OpCodes]::Ldc_I4, [int]10000)
 $ilD.Emit([Mono.Cecil.Cil.OpCodes]::Ble, $lbl_dampRet)
 $ilD.Emit([Mono.Cecil.Cil.OpCodes]::Ldc_I4, [int]10000)
-$ilD.Emit([Mono.Cecil.Cil.OpCodes]::Starg, $m_safeDamper.Parameters[0])
+$ilD.Emit([Mono.Cecil.Cil.OpCodes]::Ret)
 
 $ilD.Append($lbl_dampRet)
 $ilD.Emit([Mono.Cecil.Cil.OpCodes]::Ret)
@@ -187,15 +192,31 @@ $m_safeDamper.Body.MaxStackSize = 8
 $driverType.Methods.Add($m_safeDamper)
 Write-Output "Added method: SafeDamper"
 
-# 4. Extract existing references from FfbTick
+# 4. Resolve UnityEngine method references from existing VrDriver methods
 $m_ffbTick = $driverType.Methods | Where-Object { $_.Name -eq "FfbTick" }
-$refConst = ($m_ffbTick.Body.Instructions | Where-Object { $_.Operand -ne $null -and $_.Operand.ToString() -like "*UpdateConstantForceSimple*" } | Select-Object -First 1).Operand
-$refTime = ($m_ffbTick.Body.Instructions | Where-Object { $_.Operand -ne $null -and $_.Operand.ToString() -like "*get_unscaledTime*" } | Select-Object -First 1).Operand
-$refDelta = ($m_ffbTick.Body.Instructions | Where-Object { $_.Operand -ne $null -and $_.Operand.ToString() -like "*get_unscaledDeltaTime*" } | Select-Object -First 1).Operand
-
-# Find Distance ref
+$refDelta = $null
+$refTime = $null
 $refDist = $null
+$refIneq = $null
+$refTimeScale = $null
+
+foreach ($i in $m_ffbTick.Body.Instructions) {
+    if ($refDelta -eq $null -and $i.Operand -ne $null -and $i.Operand.ToString() -like "*get_deltaTime*") {
+        $refDelta = $i.Operand
+    }
+    if ($refTime -eq $null -and $i.Operand -ne $null -and $i.Operand.ToString() -like "*get_unscaledTime*") {
+        $refTime = $i.Operand
+    }
+    if ($refIneq -eq $null -and $i.Operand -ne $null -and $i.Operand.ToString() -like "*op_Inequality*") {
+        $refIneq = $i.Operand
+    }
+    if ($refTimeScale -eq $null -and $i.Operand -ne $null -and $i.Operand.ToString() -like "*get_timeScale*") {
+        $refTimeScale = $i.Operand
+    }
+}
+
 foreach ($m in $driverType.Methods) {
+    if ($m.Body -eq $null) { continue }
     foreach ($i in $m.Body.Instructions) {
         if ($i.Operand -ne $null -and $i.Operand.ToString() -like "*Distance(UnityEngine.Vector3*") {
             $refDist = $i.Operand
@@ -239,19 +260,27 @@ $ilW.Emit([Mono.Cecil.Cil.OpCodes]::Ldarg_0)
 $ilW.Emit([Mono.Cecil.Cil.OpCodes]::Ldfld, $f_ffbLastConst)
 $ilW.Emit([Mono.Cecil.Cil.OpCodes]::Brfalse, $lbl_retW)
 
-# DIManager.UpdateConstantForceSimple(this.ffbDev, 0);
+# Call DIManager.UpdateConstantForceSimple(this.ffbDev, 0)
+$m_updateCF = $null
+foreach ($i in $m_ffbTick.Body.Instructions) {
+    if ($i.Operand -ne $null -and $i.Operand.ToString() -like "*UpdateConstantForceSimple*") {
+        $m_updateCF = $i.Operand
+        break
+    }
+}
 $ilW.Emit([Mono.Cecil.Cil.OpCodes]::Ldarg_0)
 $ilW.Emit([Mono.Cecil.Cil.OpCodes]::Ldfld, $f_ffbDev)
 $ilW.Emit([Mono.Cecil.Cil.OpCodes]::Ldc_I4_0)
-$ilW.Emit([Mono.Cecil.Cil.OpCodes]::Call, $refConst)
+$ilW.Emit([Mono.Cecil.Cil.OpCodes]::Call, $m_updateCF)
 $ilW.Emit([Mono.Cecil.Cil.OpCodes]::Pop)
 
-# this.ffbLastConst = 0;
 $ilW.Emit([Mono.Cecil.Cil.OpCodes]::Ldarg_0)
 $ilW.Emit([Mono.Cecil.Cil.OpCodes]::Ldc_I4_0)
 $ilW.Emit([Mono.Cecil.Cil.OpCodes]::Stfld, $f_ffbLastConst)
 
 $ilW.Append($lbl_retW)
+$ilW.Emit([Mono.Cecil.Cil.OpCodes]::Ret)
+
 $m_watchdog.Body.MaxStackSize = 8
 $driverType.Methods.Add($m_watchdog)
 Write-Output "Added method: WatchdogCheck"
@@ -316,7 +345,140 @@ $m_checkRecenter.Body.MaxStackSize = 8
 $driverType.Methods.Add($m_checkRecenter)
 Write-Output "Added method: CheckGuardianRecenter"
 
-# 7. Patch ReadPoses(): Inject CheckGuardianRecenter() call before ret
+# 7. Import SimHubTelemetry and Add TelemetryTick method
+$telemAsm = [Mono.Cecil.AssemblyDefinition]::ReadAssembly($telemPath)
+$telemType = $telemAsm.MainModule.GetType("OverTheHillVR.Telemetry.TelemetryBroadcaster")
+$m_telemTick_src = $telemType.Methods | Where-Object { $_.Name -eq "TickSimple" }
+$m_telemTick = $mod.ImportReference($m_telemTick_src)
+$m_telemShutdown_src = $telemType.Methods | Where-Object { $_.Name -eq "Shutdown" }
+$m_telemShutdown = $mod.ImportReference($m_telemShutdown_src)
+
+$m_updateGauges = $driverType.Methods | Where-Object { $_.Name -eq "UpdateGauges" }
+$m_getRpmRef = ($m_updateGauges.Body.Instructions | Where-Object { $_.Operand -is [Mono.Cecil.MethodReference] -and $_.Operand.Name -eq "get_EngineRpm" }).Operand
+$statusTypeRef = $m_getRpmRef.DeclaringType
+
+$m_getSpeed = New-Object Mono.Cecil.MethodReference("get_VehicleSpeed", $mod.TypeSystem.Single, $statusTypeRef)
+$m_getSpeed.HasThis = $true
+$m_getSpeed = $mod.ImportReference($m_getSpeed)
+
+$m_getGear = New-Object Mono.Cecil.MethodReference("get_GearboxGear", $mod.TypeSystem.Int16, $statusTypeRef)
+$m_getGear.HasThis = $true
+$m_getGear = $mod.ImportReference($m_getGear)
+
+$m_carSteer = $driverType.Methods | Where-Object { $_.Name -eq "CarSteer" }
+
+$f_body = $driverType.Fields | Where-Object { $_.Name -eq "body" }
+$f_bodyRb = $driverType.Fields | Where-Object { $_.Name -eq "bodyRb" }
+$f_carStatus = $driverType.Fields | Where-Object { $_.Name -eq "carStatus" }
+$f_ffbHit = $driverType.Fields | Where-Object { $_.Name -eq "ffbHit" }
+
+$m_telemetry = New-Object Mono.Cecil.MethodDefinition("TelemetryTick", $attrsW, $mod.TypeSystem.Void)
+$m_telemetry.Body.InitLocals = $true
+$m_telemetry.Body.Variables.Add((New-Object Mono.Cecil.Cil.VariableDefinition($mod.TypeSystem.Boolean))) # 0: isDriving
+$m_telemetry.Body.Variables.Add((New-Object Mono.Cecil.Cil.VariableDefinition($mod.TypeSystem.Single)))  # 1: rpm
+$m_telemetry.Body.Variables.Add((New-Object Mono.Cecil.Cil.VariableDefinition($mod.TypeSystem.Single)))  # 2: speed
+$m_telemetry.Body.Variables.Add((New-Object Mono.Cecil.Cil.VariableDefinition($mod.TypeSystem.Int32)))   # 3: gear
+$m_telemetry.Body.Variables.Add((New-Object Mono.Cecil.Cil.VariableDefinition($mod.TypeSystem.Single)))  # 4: accelY
+$m_telemetry.Body.Variables.Add((New-Object Mono.Cecil.Cil.VariableDefinition($mod.TypeSystem.Single)))  # 5: steer
+
+$ilT = $m_telemetry.Body.GetILProcessor()
+$lbl_notDriving = $ilT.Create([Mono.Cecil.Cil.OpCodes]::Ldc_I4_0)
+$lbl_driving = $ilT.Create([Mono.Cecil.Cil.OpCodes]::Ldc_I4_1)
+$lbl_sendTelem = $ilT.Create([Mono.Cecil.Cil.OpCodes]::Ldloc_0)
+
+# Check this.body != null
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Ldarg_0)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Ldfld, $f_body)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Ldnull)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Call, $refIneq)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Brfalse, $lbl_notDriving)
+
+# Check this.bodyRb != null
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Ldarg_0)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Ldfld, $f_bodyRb)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Ldnull)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Call, $refIneq)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Brfalse, $lbl_notDriving)
+
+# Check this.carStatus != null
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Ldarg_0)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Ldfld, $f_carStatus)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Ldnull)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Call, $refIneq)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Brfalse, $lbl_notDriving)
+
+# Check Time.timeScale > 0.01f
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Call, $refTimeScale)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Ldc_R4, [float]0.01)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Ble_Un, $lbl_notDriving)
+
+# Driving = true
+$ilT.Append($lbl_driving)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Stloc_0)
+
+# rpm = (float)this.carStatus.EngineRpm
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Ldarg_0)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Ldfld, $f_carStatus)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Callvirt, $m_getRpmRef)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Conv_R4)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Stloc_1)
+
+# speed = this.carStatus.VehicleSpeed
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Ldarg_0)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Ldfld, $f_carStatus)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Callvirt, $m_getSpeed)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Stloc_2)
+
+# gear = (int)this.carStatus.GearboxGear
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Ldarg_0)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Ldfld, $f_carStatus)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Callvirt, $m_getGear)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Conv_I4)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Stloc_3)
+
+# steer = this.CarSteer()
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Ldarg_0)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Call, $m_carSteer)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Stloc_s, [byte]5)
+
+# accelY = 0f
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Ldc_R4, [float]0.0)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Stloc_s, [byte]4)
+
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Br, $lbl_sendTelem)
+
+# Not Driving
+$ilT.Append($lbl_notDriving)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Stloc_0)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Ldc_R4, [float]0.0)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Stloc_1)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Ldc_R4, [float]0.0)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Stloc_2)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Ldc_I4_0)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Stloc_3)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Ldc_R4, [float]0.0)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Stloc_s, [byte]4)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Ldc_R4, [float]0.0)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Stloc_s, [byte]5)
+
+# Send to TelemetryBroadcaster.TickSimple
+$ilT.Append($lbl_sendTelem)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Call, $refTime)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Ldloc_1)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Ldloc_2)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Ldloc_3)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Ldloc_s, [byte]4)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Ldarg_0)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Ldfld, $f_ffbHit)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Ldloc_s, [byte]5)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Call, $m_telemTick)
+$ilT.Emit([Mono.Cecil.Cil.OpCodes]::Ret)
+
+$m_telemetry.Body.MaxStackSize = 16
+$driverType.Methods.Add($m_telemetry)
+Write-Output "Added method: TelemetryTick"
+
+# 8. Patch ReadPoses(): Inject CheckGuardianRecenter() call before ret
 $m_readPoses = $driverType.Methods | Where-Object { $_.Name -eq "ReadPoses" }
 $lastRP = $m_readPoses.Body.Instructions[$m_readPoses.Body.Instructions.Count - 1]
 $ilRP = $m_readPoses.Body.GetILProcessor()
@@ -324,24 +486,27 @@ $ilRP.InsertBefore($lastRP, ($ilRP.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0)))
 $ilRP.InsertBefore($lastRP, ($ilRP.Create([Mono.Cecil.Cil.OpCodes]::Call, $m_checkRecenter)))
 Write-Output "Patched ReadPoses(): Injected CheckGuardianRecenter()"
 
-# 8. Patch Quit(): Add FfbStop() call before ret
+# 9. Patch Quit(): Add FfbStop() and Telemetry Shutdown calls before ret
 $m_quit = $driverType.Methods | Where-Object { $_.Name -eq "Quit" }
 $m_ffbStop = $driverType.Methods | Where-Object { $_.Name -eq "FfbStop" }
 $lastQuit = $m_quit.Body.Instructions[$m_quit.Body.Instructions.Count - 1]
 $ilQ = $m_quit.Body.GetILProcessor()
 $ilQ.InsertBefore($lastQuit, ($ilQ.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0)))
 $ilQ.InsertBefore($lastQuit, ($ilQ.Create([Mono.Cecil.Cil.OpCodes]::Call, $m_ffbStop)))
-Write-Output "Patched Quit(): Added FfbStop() teardown"
+$ilQ.InsertBefore($lastQuit, ($ilQ.Create([Mono.Cecil.Cil.OpCodes]::Call, $m_telemShutdown)))
+Write-Output "Patched Quit(): Added FfbStop() and TelemetryBroadcaster.Shutdown() teardown"
 
-# 9. Patch Update(): Call WatchdogCheck() at start
+# 10. Patch Update(): Call WatchdogCheck() and TelemetryTick() at start
 $m_update = $driverType.Methods | Where-Object { $_.Name -eq "Update" }
 $ilU = $m_update.Body.GetILProcessor()
 $firstInstU = $m_update.Body.Instructions[0]
 $ilU.InsertBefore($firstInstU, ($ilU.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0)))
 $ilU.InsertBefore($firstInstU, ($ilU.Create([Mono.Cecil.Cil.OpCodes]::Call, $m_watchdog)))
-Write-Output "Patched Update(): Injected WatchdogCheck()"
+$ilU.InsertBefore($firstInstU, ($ilU.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0)))
+$ilU.InsertBefore($firstInstU, ($ilU.Create([Mono.Cecil.Cil.OpCodes]::Call, $m_telemetry)))
+Write-Output "Patched Update(): Injected WatchdogCheck() and TelemetryTick()"
 
-# 10. Patch FfbTick():
+# 11. Patch FfbTick():
 $ilTick = $m_ffbTick.Body.GetILProcessor()
 
 # Inject ffbLastTick = Time.unscaledTime at beginning of FfbTick
@@ -388,7 +553,7 @@ for ($i = 0; $i -lt $m_ffbTick.Body.Instructions.Count; $i++) {
 
 $m_ffbTick.Body.MaxStackSize = 32
 
-# 11. Patch WheelConnect(): Set isDirectDrive = true for Fanatec/DD
+# 12. Patch WheelConnect(): Set isDirectDrive = true for Fanatec/DD
 $m_wheelConnect = $driverType.Methods | Where-Object { $_.Name -eq "WheelConnect" }
 $ilWC = $m_wheelConnect.Body.GetILProcessor()
 for ($i = $m_wheelConnect.Body.Instructions.Count - 1; $i -ge 0; $i--) {
@@ -403,7 +568,7 @@ for ($i = $m_wheelConnect.Body.Instructions.Count - 1; $i -ge 0; $i--) {
     }
 }
 
-# 12. Save modified assembly
+# 13. Save modified assembly
 $outPath = "D:\Projects\overthehillvr-fan\Mods\OverTheHillVR.dll.patched"
 $asm.Write($outPath)
 $asm.Dispose()
