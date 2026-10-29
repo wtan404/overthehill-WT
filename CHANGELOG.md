@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.3-dev] - 2026-10-28
+### Fixed
+- **Direct Drive Force Feedback Activation & Evaluation Stack Resolution**:
+  - Fixed an evaluation stack misalignment in `VrDriver.FfbTick` where an extraneous `ldarg.0` instruction was erroneously emitted before calling the static method `GameFocused()`. This caused a stack offset violation and triggered an `InvalidProgramException` at the CLR JIT boundary, halting force feedback dispatch after three warning ticks.
+  - Declared explicit stack ceiling (`MaxStackSize = 32`) on `FfbTick`, `SafeFfb`, `SafeDamper`, and `WatchdogCheck`, fully resolving the JIT verifier exception and restoring active force feedback to Fanatec Direct Drive hardware.
+- **Meta Quest Guardian Recenter & View Re-Alignment**:
+  - Implemented automatic Guardian tracking space recenter detection in `VrDriver.ReadPoses()`. When the user holds the Meta button to recenter via Quest OS, the game detects the instantaneous tracking origin teleportation ($d > 0.25\text{ m}$) and automatically re-anchors the in-game seated origin (`needRecenter = true; seatValid = false;`), properly locking direction straight forward and height to the driver seat eye level.
+  - Enabled `WheelButtonLog = true` in `UserData/MelonPreferences.cfg` to allow direct in-game mapping of physical Fanatec wheel rim buttons to `WheelBtnRecenter`.
 ## [1.7.2-dev] - 2026-10-28
 ### Added
 - **Direct Drive Wheelbase Hardware Safeties & Watchdog Protection**:

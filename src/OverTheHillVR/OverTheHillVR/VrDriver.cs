@@ -550,6 +550,12 @@ internal class VrDriver
 
 	private float ffbLastTick;
 
+	private Vector3 prevRawPos;
+
+	private float prevRawYaw;
+
+	private bool prevRawValid;
+
 	private DeviceInfo wheelDev;
 
 	private bool wheelTried;
@@ -3443,6 +3449,25 @@ internal class VrDriver
 		return val2;
 	}
 
+
+	private void CheckGuardianRecenter()
+	{
+		if (!hmdValid) return;
+		if (prevRawValid)
+		{
+			float d = Vector3.Distance(hmdPos, prevRawPos);
+			if (d > 0.25f)
+			{
+				needRecenter = true;
+				seatValid = false;
+				bonnetValid = false;
+				L.Msg($"VR: External Guardian recenter detected ({d:0.00}m jump). Auto-aligning cockpit view.");
+			}
+		}
+		prevRawPos = hmdPos;
+		prevRawValid = true;
+	}
+
 	private void ReadPoses()
 	{
 		//IL_0093: Unknown result type (might be due to invalid IL or missing references)
@@ -3463,6 +3488,7 @@ internal class VrDriver
 			hmdPos = VMath.PosOf(trackedDevicePose_t.mDeviceToAbsoluteTracking);
 			hmdRot = VMath.RotOf(trackedDevicePose_t.mDeviceToAbsoluteTracking);
 		}
+		CheckGuardianRecenter();
 	}
 
 	private IEnumerator EndOfFrameLoop()
